@@ -1,4 +1,3 @@
-# bot.py — Google Таблица версия
 import asyncio
 import logging
 import json
@@ -14,17 +13,11 @@ from aiogram.fsm.storage.memory import MemoryStorage
 import gspread
 from google.oauth2.service_account import Credentials
 
-# === НАСТРОЙКИ ===
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID"))
 GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDS_JSON")
-SPREADSHEET_ID = "1xTCcGRW-jsolnONiv9gptpSTTRtexHbJTlHoQLotFD4"  # ← ЗАМЕНИ ЭТУ СТРОКУ!
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")  # Теперь тоже из переменной!
 
-# === ИНИЦИАЛИЗАЦИЯ ===
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(storage=MemoryStorage())
-
-# === GOOGLE SHEETS ===
 def get_sheet():
     creds_dict = json.loads(GOOGLE_CREDS_JSON)
     creds = Credentials.from_service_account_info(creds_dict, scopes=[
@@ -34,13 +27,11 @@ def get_sheet():
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
     return sheet
 
-# === СОСТОЯНИЯ ===
 class ApplicationForm(StatesGroup):
     name = State()
     phone = State()
     message = State()
 
-# === СОХРАНЕНИЕ В ТАБЛИЦУ ===
 def save_to_sheet(user_id, username, name, phone, msg):
     try:
         sheet = get_sheet()
@@ -56,7 +47,9 @@ def save_to_sheet(user_id, username, name, phone, msg):
     except Exception as e:
         print(f"Ошибка записи в таблицу: {e}")
 
-# === КОМАНДЫ ===
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(storage=MemoryStorage())
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer("👋 Привет! Пожалуйста, оставьте заявку.\nКак вас зовут?")
@@ -89,7 +82,6 @@ async def process_message(message: types.Message, state: FSMContext):
     await message.answer("✅ Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.")
     await state.clear()
 
-# === АДМИНКА ===
 @dp.message(Command("admin"))
 async def cmd_admin(message: types.Message):
     if message.from_user.id != ADMIN_USER_ID:
@@ -97,7 +89,6 @@ async def cmd_admin(message: types.Message):
         return
     await message.answer("✅ Бот работает. Все заявки — в Google Таблице.")
 
-# === ЗАПУСК ===
 async def main():
     logging.basicConfig(level=logging.INFO)
     await dp.start_polling(bot)
