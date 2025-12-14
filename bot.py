@@ -54,7 +54,7 @@ def validate_date(text):
         return False
 
 def validate_phone(text):
-    return bool(re.fullmatch(r"\+375\d{7}", text))  # +375 + 7 цифр = 11 символов
+    return bool(re.fullmatch(r"\+375\d{9}", text))  # +375 + 9 цифр = 13 символов
 
 # === FSM ===
 class ApplicationForm(StatesGroup):
@@ -144,7 +144,7 @@ async def process_birth_date(message: types.Message, state: FSMContext):
         await message.answer("Неверный формат даты. Пример: 01.01.1995")
         return
     await state.update_data(birth_date=message.text)
-    await message.answer("Укажите телефон для связи (в формате +3752912345):", reply_markup=cancel_menu())
+    await message.answer("Укажите телефон для связи (в формате +375291234567):", reply_markup=cancel_menu())
     await state.set_state(ApplicationForm.phone)
 
 @dp.message(ApplicationForm.phone)
@@ -265,6 +265,17 @@ async def cmd_reply(message: types.Message):
     except:
         await message.answer("❌ Используйте: `/reply 123456789 Текст`")
 
+def mark_application_as_done(user_id):
+    sheet = get_sheet()
+    rows = sheet.get_all_values()
+    if len(rows) < 2:
+        return False
+    for i, row in enumerate(rows[1:], start=2):
+        if len(row) > 1 and row[1] == str(user_id):
+            sheet.update_cell(i, 11, "ДА")
+            return True
+    return False
+
 @dp.message(Command("done"))
 async def cmd_done(message: types.Message):
     if message.from_user.id != ADMIN_USER_ID:
@@ -274,9 +285,11 @@ async def cmd_done(message: types.Message):
         if len(parts) < 2:
             raise ValueError()
         user_id = int(parts[1])
-        # Здесь можно обновить колонку "Обработано", но для простоты опустим
-        await message.answer("✅ Заявка помечена как обработанная.")
-    except:
+        if mark_application_as_done(user_id):
+            await message.answer("✅ Заявка помечена как обработанная.")
+        else:
+            await message.answer("❌ Заявка не найдена.")
+    except Exception as e:
         await message.answer("❌ Используйте: `/done 123456789`")
 
 # === HTTP SERVER ДЛЯ RENDER ===
