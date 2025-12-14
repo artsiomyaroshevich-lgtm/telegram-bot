@@ -13,7 +13,7 @@ from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import ReplyKeyboardMarkup, KeyboardBuilder, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -24,7 +24,7 @@ ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID"))
 GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDS_JSON")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 
-OPERATOR_NAME = "ИП Яросевич Артём Олегович"  # ← ЗАМЕНИ НА СВОЁ!
+OPERATOR_NAME = "Войсковая часть"  # ← ЗАМЕНИ НА СВОЁ!
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
