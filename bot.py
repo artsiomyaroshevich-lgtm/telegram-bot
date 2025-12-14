@@ -72,9 +72,7 @@ async def process_name(message: types.Message, state: FSMContext):
 async def process_phone(message: types.Message, state: FSMContext):
     await state.update_data(phone=message.text)
     await message.answer("💬 Опишите ваш запрос:")
-    await state.set_state(Application.
-
-.message)
+    await state.set_state(ApplicationForm.message)
 
 @dp.message(ApplicationForm.message)
 async def process_message(message: types.Message, state: FSMContext):
