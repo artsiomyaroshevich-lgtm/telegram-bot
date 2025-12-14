@@ -37,7 +37,7 @@ def get_sheet():
     client = gspread.authorize(creds)
     return client.open_by_key(SPREADSHEET_ID).sheet1
 
-def save_application(user_id, username, name, phone, msg):
+async def save_application_and_notify_admin(user_id, username, name, phone, msg, bot_instance):
     sheet = get_sheet()
     row = [
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -47,9 +47,29 @@ def save_application(user_id, username, name, phone, msg):
         phone,
         msg,
         "ДА",
-        "НЕТ"  # обработано = НЕТ
+        "НЕТ"
     ]
     sheet.append_row(row)
+
+    # Формируем уведомление админу
+    admin_text = (
+        f"📥 **Новая заявка!**\n\n"
+        f"ID: `{user_id}`\n"
+        f"Имя: {name}\n"
+        f"Телефон: {phone}\n"
+        f"Сообщение: {msg}\n\n"
+        f"`/reply {user_id} Здравствуйте!`\n"
+        f"`/done {user_id}`"
+    )
+
+    try:
+        await bot_instance.send_message(
+            chat_id=ADMIN_USER_ID,
+            text=admin_text,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        print(f"Не удалось отправить уведомление админу: {e}")
 
 def get_unprocessed_applications():
     sheet = get_sheet()
@@ -157,10 +177,15 @@ async def confirm_application(message: types.Message, state: FSMContext):
         await message.answer("Начнём заново.", reply_markup=ReplyMarkup([[KeyboardButton(text="✅ Согласен на обработку ПД")]]))
         await state.set_state(ApplicationForm.consent)
         return
+    if message.text != "✅ Да":
+        return
     data = await state.get_data()
     user_id = message.from_user.id
     username = message.from_user.username
-    save_application(user_id, username, data['name'], data['phone'], data['message'])
+    # Сохраняем И уведомляем админа
+    await save_application_and_notify_admin(
+        user_id, username, data['name'], data['phone'], data['message'], bot
+    )
     await message.answer("✅ Заявка принята!", reply_markup=main_menu())
     await state.clear()
 
